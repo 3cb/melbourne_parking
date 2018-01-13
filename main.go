@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
+	"net/http"
 
-	"github.com/3cb/ssc"
+	"github.com/gorilla/mux"
 
 	"github.com/boltdb/bolt"
 )
@@ -21,14 +22,30 @@ func main() {
 	}
 
 	// start websocket pool
-	config := ssc.PoolConfig{
-		IsReadable: true,
-		IsWritable: true,
-		IsJSON:     false,
-	}
-	pool, err := ssc.NewSocketPool(config)
-	if err != nil {
-		log.Fatalf("Unable to create socket pool: %s", err)
-	}
+	// config := ssc.PoolConfig{
+	// 	IsReadable: true,
+	// 	IsWritable: true,
+	// 	IsJSON:     false,
+	// }
+	// pool, err := ssc.NewSocketPool(config)
+	// if err != nil {
+	// 	log.Fatalf("Unable to create socket pool: %s", err)
+	// }
 
+	// routes
+	r := mux.NewRouter()
+
+	r.Handle("/", http.FileServer(http.Dir("./static/")))
+	r.PathPrefix("/dist").Handler(http.FileServer(http.Dir("./static")))
+
+	r.Handle("/api/spots", spotsHandler(db))
+
+	log.Fatal(http.ListenAndServe(":5050", r))
+}
+
+func spotsHandler(db *bolt.DB) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		msg := queryDB(db)
+		w.Write(msg)
+	})
 }

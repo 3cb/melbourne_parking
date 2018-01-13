@@ -1,10 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
-
 	"github.com/boltdb/bolt"
 )
 
@@ -18,21 +14,24 @@ func createBucket(db *bolt.DB, name string) error {
 	})
 }
 
-func updateSpots() ([]Spot, error) {
-	spots := []Spot{}
+func updateDB(db *bolt.DB, msg []byte) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("Spaces"))
+		err := b.Put([]byte("current"), msg)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
 
-	resp, err := http.Get("https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json")
-	if err != nil {
-		return spots, err
-	}
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return spots, err
-	}
-	err = json.Unmarshal(data, &spots)
-	if err != nil {
-		return spots, err
-	}
-	return spots, nil
+func queryDB(db *bolt.DB) []byte {
+	msg := []byte{}
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("Spaces"))
+		v := b.Get([]byte("current"))
+		msg = append(msg, v...)
+		return nil
+	})
+	return msg
 }

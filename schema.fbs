@@ -1,0 +1,16 @@
+namespace melbourne;
+
+table Message {
+    date:string;
+    spots:[Spot];
+}
+
+table Spot {
+    bay_id:string;
+    longitude:string;
+    latitude:string;
+    st_marker_id:string;
+    status:string;
+}
+
+root_type Message;
