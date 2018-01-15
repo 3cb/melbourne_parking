@@ -2,6 +2,8 @@
 
 > Uses Mapbox-gl-js API to plot open/occupied parking spaces in Melbourne, AUS
 
+> Socrata Open Data API Docs: https://dev.socrata.com/foundry/data.melbourne.vic.gov.au/dtpv-d4pf
+
 ## Build Setup
 
 ``` bash
