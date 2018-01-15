@@ -9,6 +9,10 @@ export default new Vuex.Store({
     wsConnected: false,
 
     spots: [],
+    count: {
+      occupied: 0,
+      unoccupied: 0
+    },
     features: []
   },
   mutations: {
@@ -21,7 +25,18 @@ export default new Vuex.Store({
     },
     updateSpots(state, msg) {
       state.spots = []
+      state.count = {
+        occupied: 0,
+        unoccupied: 0
+      }
+
       for (let i = 0; i < msg.spotsLength(); i++) {
+        if (msg.spots(i).status() === 'Present') {
+          state.count.occupied++
+        } else if (msg.spots(i).status() === 'Unoccupied') {
+          state.count.unoccupied++
+        }
+
         state.spots.push({
           bayId: msg.spots(i).bayId(),
           longitude: msg.spots(i).longitude(),
