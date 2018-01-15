@@ -43,14 +43,13 @@ func poll(db *bolt.DB, pool *ssc.SocketPool) {
 			log.Printf("Unable to store spots data in database: %v", err)
 		}
 		pool.Pipes.InboundBytes <- ssc.Data{Type: 2, Payload: buf}
-
 	}
 }
 
 func updateSpots() ([]Spot, error) {
 	spots := []Spot{}
 
-	resp, err := http.Get("https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json")
+	resp, err := http.Get("https://data.melbourne.vic.gov.au/resource/vh2v-4nfs.json?$limit=5000")
 	if err != nil {
 		return spots, err
 	}
