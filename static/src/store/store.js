@@ -7,6 +7,7 @@ export default new Vuex.Store({
   state: {
     ws: null,
     wsConnected: false,
+    wsProtocol: location.hostname === "localhost" ? "ws://" : "wss://",
 
     spots: [],
     count: {
@@ -17,7 +18,7 @@ export default new Vuex.Store({
   },
   mutations: {
     startWS(state) {
-      state.ws = new WebSocket("ws://" + location.host + "/ws")
+      state.ws = new WebSocket(state.wsProtocol + location.host + "/ws")
       state.ws.binaryType = 'arraybuffer'
       state.ws.onopen = event => {
         state.wsConnected = true
