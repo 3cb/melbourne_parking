@@ -6,6 +6,8 @@
 
 ## Build Setup
 
+From static folder:
+
 ``` bash
 # install dependencies
 npm install
