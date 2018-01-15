@@ -20,21 +20,58 @@
 
 <script>
 import axios from "axios";
+import xs from "xstream";
 var flatbuffers = require("../../node_modules/flatbuffers").flatbuffers;
 var melbourne = require("../melbourne/schema_generated.js").melbourne;
 
 export default {
   data() {
     return {
-      map: null
+      map: null,
+
+      producer: {
+        start: listener => {
+          this.$store.commit("startWS");
+          this.$store.state.ws.onmessage = event => {
+            console.log(event);
+            let bytes = new Uint8Array(event.data)
+            let buf = new flatbuffers.ByteBuffer(bytes)
+            let msg = melbourne.Message.getRootAsMessage(buf)
+            listener.next(msg)
+          };
+        },
+        stop: () => {
+          console.log("No longer listening to websocket.");
+        }
+      },
+      updateListener: {
+        next: msg => {
+          this.$store.commit("updateSpots", msg);
+          this.$store.commit("updateFeatures");
+        },
+        error: err => {
+          console.error(err);
+        },
+        complete: () => {
+          console.log("update stream complete.");
+        }
+      }
     };
   },
   computed: {
     features() {
       return this.$store.state.features;
+    },
+    main$() {
+      return xs.createWithMemory(this.producer)
+    },
+    update$() {
+      return xs.from(this.main$)
     }
   },
   mounted() {
+    this.update$.addListener(this.updateListener)
+
     mapboxgl.accessToken =
       "pk.eyJ1IjoibWFyY2NiIiwiYSI6ImNqYTR1enN2dGE0bWEyd3BhcTd6cnBzc3MifQ.Z4zYRzVCXv5zCqqdpgKZ-w";
     this.map = new mapboxgl.Map({

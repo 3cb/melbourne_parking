@@ -5,10 +5,20 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
+    ws: null,
+    wsConnected: false,
+
     spots: [],
     features: []
   },
   mutations: {
+    startWS(state) {
+      state.ws = new WebSocket("ws://" + location.host + "/ws")
+      state.ws.binaryType = 'arraybuffer'
+      state.ws.onopen = event => {
+        state.wsConnected = true
+      }
+    },
     updateSpots(state, msg) {
       state.spots = []
       for (let i = 0; i < msg.spotsLength(); i++) {
