@@ -1,6 +1,6 @@
 # melbourne_parking
 
-> A Vue.js project
+> Uses Mapbox-gl-js API to plot open/occupied parking spaces in Melbourne, AUS
 
 ## Build Setup
 
@@ -16,3 +16,12 @@ npm run build
 ```
 
 For detailed explanation on how things work, consult the [docs for vue-loader](http://vuejs.github.io/vue-loader).
+
+for go files:
+
+```
+# from project root
+go get
+go build
+./{binary_name}
+```
