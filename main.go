@@ -25,10 +25,9 @@ func main() {
 	}
 
 	// start websocket pool
-	config := ssc.PoolConfig{
+	config := ssc.Config{
 		IsReadable: true,
 		IsWritable: true,
-		IsJSON:     false,
 	}
 	pool, err := ssc.NewSocketPool(config)
 	if err != nil {
