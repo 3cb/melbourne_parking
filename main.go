@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -24,12 +25,7 @@ func main() {
 		log.Fatalf("unable to create bucket: %s", err)
 	}
 
-	// start websocket pool
-	config := ssc.Config{
-		IsReadable: true,
-		IsWritable: true,
-	}
-	pool, err := ssc.NewSocketPool(config)
+	pool, err := ssc.NewSocketPool([]string{}, time.Second*0)
 	if err != nil {
 		log.Fatalf("Unable to create socket pool: %s", err)
 	}
