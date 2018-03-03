@@ -62,7 +62,7 @@ export default {
   },
   computed: {
     count() {
-      return this.$store.state.count
+      return this.$store.state.count;
     },
     features() {
       return this.$store.state.features;
@@ -89,7 +89,7 @@ export default {
       "pk.eyJ1IjoibWFyY2NiIiwiYSI6ImNqYTR1enN2dGE0bWEyd3BhcTd6cnBzc3MifQ.Z4zYRzVCXv5zCqqdpgKZ-w";
     this.map = new mapboxgl.Map({
       container: "map", // container id
-      style: "mapbox://styles/mapbox/streets-v10", // stylesheet location
+      style: 'mapbox://styles/mapbox/light-v9',
       center: [144.963056, -37.813611], // starting position [lng, lat]
       zoom: 13.75
     });
@@ -122,7 +122,10 @@ export default {
             type: "circle",
             source: "spots",
             paint: {
-              "circle-radius": 2,
+              "circle-radius": {
+                base: 1.75,
+                stops: [[11, 1], [22, 35]]
+              },
               "circle-color": [
                 "match",
                 ["get", "status"],
