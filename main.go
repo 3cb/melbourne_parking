@@ -25,7 +25,8 @@ func main() {
 		log.Fatalf("unable to create bucket: %s", err)
 	}
 
-	pool, err := ssc.NewSocketPool([]string{}, time.Second*0)
+	pool := ssc.NewPool([]string{}, time.Second*0)
+	err = pool.Start()
 	if err != nil {
 		log.Fatalf("Unable to create socket pool: %s", err)
 	}
@@ -53,9 +54,9 @@ func spotsHandler(db *bolt.DB) http.Handler {
 	})
 }
 
-func wsHandler(db *bolt.DB, pool *ssc.SocketPool, upgrader *websocket.Upgrader) http.Handler {
+func wsHandler(db *bolt.DB, pool *ssc.Pool, upgrader *websocket.Upgrader) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := pool.AddClientSocket(upgrader, w, r)
+		err := pool.AddClientSocket("", upgrader, w, r)
 		if err != nil {
 			log.Printf("Unable to create new socket connection")
 		} else {

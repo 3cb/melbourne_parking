@@ -13,7 +13,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-func poll(db *bolt.DB, pool *ssc.SocketPool) {
+func poll(db *bolt.DB, pool *ssc.Pool) {
 	ticker := time.NewTicker(time.Minute * 1)
 	loc, _ := time.LoadLocation("Australia/Melbourne")
 
@@ -27,7 +27,7 @@ func poll(db *bolt.DB, pool *ssc.SocketPool) {
 	if err != nil {
 		log.Printf("Unable to store spots data in database: %v", err)
 	}
-	pool.Pipes.Inbound <- ssc.Message{Type: 2, Payload: buf}
+	pool.Inbound <- &ssc.Message{Type: 2, Payload: buf}
 
 	for {
 		<-ticker.C
@@ -42,7 +42,7 @@ func poll(db *bolt.DB, pool *ssc.SocketPool) {
 		if err != nil {
 			log.Printf("Unable to store spots data in database: %v", err)
 		}
-		pool.Pipes.Inbound <- ssc.Message{Type: 2, Payload: buf}
+		pool.Inbound <- &ssc.Message{Type: 2, Payload: buf}
 	}
 }
 
