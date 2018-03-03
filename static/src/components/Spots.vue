@@ -158,7 +158,7 @@ body {
   bottom: 0;
   width: 240px;
   height: 80px;
-  background-color: whitesmoke;
+  background-color: white;
   color: black;
 }
 
