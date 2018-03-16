@@ -89,13 +89,11 @@ export default {
       "pk.eyJ1IjoibWFyY2NiIiwiYSI6ImNqYTR1enN2dGE0bWEyd3BhcTd6cnBzc3MifQ.Z4zYRzVCXv5zCqqdpgKZ-w";
     this.map = new mapboxgl.Map({
       container: "map", // container id
-      style: 'mapbox://styles/mapbox/light-v9',
+      style: "mapbox://styles/mapbox/light-v9",
       center: [144.963056, -37.813611], // starting position [lng, lat]
       zoom: 13.75
     });
 
-    // Add zoom and rotation controls to the map.
-    this.map.addControl(new mapboxgl.NavigationControl());
     this.map.on("load", () => {
       axios({
         url: "/api/spots",
@@ -141,6 +139,15 @@ export default {
         .catch(err => {
           console.error(err);
         });
+
+      var geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        bbox: [144.932102, -37.834726, 144.987248, -37.792422]
+      });
+
+      this.map.addControl(geocoder, "top-right");
+      // Add zoom and rotation controls to the map.
+      this.map.addControl(new mapboxgl.NavigationControl());
     });
   }
 };
@@ -167,5 +174,19 @@ body {
   top: 0;
   bottom: 0;
   width: 100%;
+}
+
+.mapboxgl-ctrl-geocoder {
+  border: 0;
+  border-radius: 0;
+  position: relative;
+  top: 0;
+  width: 800px;
+  margin-top: 0;
+}
+
+.mapboxgl-ctrl-geocoder > div {
+  min-width: 100%;
+  margin-left: 0;
 }
 </style>
