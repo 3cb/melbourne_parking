@@ -31,6 +31,7 @@ export default {
   data() {
     return {
       map: null,
+      geocoder: null,
 
       producer: {
         start: listener => {
@@ -67,6 +68,9 @@ export default {
     features() {
       return this.$store.state.features;
     },
+    searchPoint() {
+      return this.$store.state.searchPoint;
+    },
     main$() {
       return xs.createWithMemory(this.producer);
     },
@@ -79,6 +83,12 @@ export default {
       this.map.getSource("spots").setData({
         type: "FeatureCollection",
         features: ft
+      });
+    },
+    searchPoint(sp) {
+      this.map.getSource("search-point").setData({
+        type: "FeatureCollection",
+        features: sp
       });
     }
   },
@@ -115,6 +125,14 @@ export default {
             }
           });
 
+          this.map.addSource("search-point", {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features: this.searchPoint
+            }
+          });
+
           this.map.addLayer({
             id: "spotsLayer",
             type: "circle",
@@ -135,19 +153,35 @@ export default {
               ]
             }
           });
+
+          this.map.addLayer({
+            id: "searchLayer",
+            type: "circle",
+            source: "search-point",
+            paint: {
+              "circle-radius": 10,
+              "circle-color": "#007cbf",
+              "circle-stroke-width": 3,
+              "circle-stroke-color": "#fff"
+            }
+          });
         })
         .catch(err => {
           console.error(err);
         });
 
-      var geocoder = new MapboxGeocoder({
+      this.geocoder = new MapboxGeocoder({
         accessToken: mapboxgl.accessToken,
         bbox: [144.932102, -37.834726, 144.987248, -37.792422]
       });
 
-      this.map.addControl(geocoder, "top-right");
+      this.map.addControl(this.geocoder, "top-right");
       // Add zoom and rotation controls to the map.
       this.map.addControl(new mapboxgl.NavigationControl());
+
+      this.geocoder.on("result", e => {
+        this.$store.commit("updateSearchPoint", e.result.geometry);
+      });
     });
   }
 };
