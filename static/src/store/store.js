@@ -14,7 +14,8 @@ export default new Vuex.Store({
       occupied: 0,
       unoccupied: 0
     },
-    features: []
+    features: [],
+    searchPoint: []
   },
   mutations: {
     startWS(state) {
@@ -61,6 +62,13 @@ export default new Vuex.Store({
           }
         })
       }
+    },
+    updateSearchPoint(state, geometry) {
+      state.searchPoint = []
+      state.searchPoint.push({
+        type: "Feature",
+        geometry: geometry
+      })
     }
   }
 })
