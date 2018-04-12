@@ -71,6 +71,9 @@ export default {
     searchPoint() {
       return this.$store.state.searchPoint;
     },
+    directions() {
+      return this.$store.state.directions;
+    },
     main$() {
       return xs.createWithMemory(this.producer);
     },
@@ -89,6 +92,12 @@ export default {
       this.map.getSource("search-point").setData({
         type: "FeatureCollection",
         features: sp
+      });
+    },
+    directions(dir) {
+      this.map.getSource("directions").setData({
+        type: "FeatureCollection",
+        features: dir
       });
     }
   },
@@ -133,6 +142,14 @@ export default {
             }
           });
 
+          this.map.addSource("directions", {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features: this.directions
+            }
+          });
+
           this.map.addLayer({
             id: "spotsLayer",
             type: "circle",
@@ -165,6 +182,15 @@ export default {
               "circle-stroke-color": "#fff"
             }
           });
+
+          this.map.addLayer({
+            id: "directionsLayer",
+            type: "line",
+            source: "directions",
+            paint: {
+              "line-width": 3
+            }
+          });
         })
         .catch(err => {
           console.error(err);
@@ -181,8 +207,39 @@ export default {
 
       this.geocoder.on("result", e => {
         this.$store.commit("updateSearchPoint", e.result.geometry);
+        this.$store.commit("setClosestSpace");
+        // console.log(this.$store.state.searchPoint);
+        // console.log(this.$store.state.closestSpace);
+        this.getRoute();
       });
     });
+  },
+  methods: {
+    getRoute() {
+      var start = this.$store.state.closestSpace.geometry.coordinates;
+      var end = this.$store.state.searchPoint[0].geometry.coordinates;
+      var reqURL =
+        "https://api.mapbox.com/directions/v5/mapbox/walking/" +
+        start[0] +
+        "," +
+        start[1] +
+        ";" +
+        end[0] +
+        "," +
+        end[1] +
+        "?geometries=geojson&access_token=" +
+        mapboxgl.accessToken;
+      axios({
+        url: reqURL,
+        method: "get"
+      })
+        .then(response => {
+          this.$store.commit("setDirections", response.data.routes[0].geometry);
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    }
   }
 };
 </script>

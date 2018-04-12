@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import _ from 'lodash'
 
 Vue.use(Vuex)
 
@@ -14,8 +15,10 @@ export default new Vuex.Store({
       occupied: 0,
       unoccupied: 0
     },
-    features: [],
-    searchPoint: []
+    features: [], // [{ type: "Feature", geometry: geometry }]
+    searchPoint: [], // [{ type: "Feature", geometry: geometry }]
+    closestSpace: {}, // { type: "Feature", geometry: geometry }
+    directions: [] // [{ type: "Feature", geometry: geometry }]
   },
   mutations: {
     startWS(state) {
@@ -66,6 +69,29 @@ export default new Vuex.Store({
     updateSearchPoint(state, geometry) {
       state.searchPoint = []
       state.searchPoint.push({
+        type: "Feature",
+        geometry: geometry
+      })
+    },
+    setClosestSpace(state) {
+      state.closestSpace = {}
+      var options = {
+        units: "kilometers"
+      }
+      var i
+      var d
+      for (i = 0; i < state.features.length; i++) {
+        if (state.features[i].properties.status === "Unoccupied" && _.hasIn(state.closestSpace, "geometry") === false) {
+          state.closestSpace = state.features[i]
+        } else if (state.features[i].properties.status === "Unoccupied" && _.hasIn(state.closestSpace, "geometry") === true) {
+          state.closestSpace = (turf.distance(turf.point(state.searchPoint[0].geometry.coordinates), turf.point(state.features[i].geometry.coordinates), options)
+            < turf.distance(turf.point(state.searchPoint[0].geometry.coordinates), turf.point(state.closestSpace.geometry.coordinates), options)) ? state.features[i] : state.closestSpace
+        }
+      }
+    },
+    setDirections(state, geometry) {
+      state.directions = []
+      state.directions.push({
         type: "Feature",
         geometry: geometry
       })
