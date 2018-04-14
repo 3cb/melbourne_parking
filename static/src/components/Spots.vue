@@ -24,6 +24,7 @@
 <script>
 import axios from "axios";
 import xs from "xstream";
+import _ from "lodash";
 var flatbuffers = require("../../node_modules/flatbuffers").flatbuffers;
 var melbourne = require("../melbourne/schema_generated.js").melbourne;
 
@@ -67,6 +68,9 @@ export default {
     },
     features() {
       return this.$store.state.features;
+    },
+    openSpaces() {
+      return this.$store.state.openSpaces;
     },
     searchPoint() {
       return this.$store.state.searchPoint;
@@ -207,17 +211,39 @@ export default {
 
       this.geocoder.on("result", e => {
         this.$store.commit("updateSearchPoint", e.result.geometry);
-        this.$store.commit("setClosestSpace");
-        // console.log(this.$store.state.searchPoint);
-        // console.log(this.$store.state.closestSpace);
-        this.getRoute();
+        var closestSpaces = _.chain(this.openSpaces)
+          .map(v => {
+            v.distance = turf.distance(
+              turf.point(e.result.geometry.coordinates),
+              turf.point(v.geometry.coordinates),
+              { units: "kilometers" }
+            );
+            return v;
+          })
+          .orderBy(["distance"], ["asc"])
+          .take(15) // max requests for Mapbox route API is 60 per minute
+          .value();
+
+        axios.all(this.getConcurrentRequests(closestSpaces))
+          .then(
+            axios.spread((...responses) => {
+              this.$store.commit(
+                "setDirections",
+                this.findClosestSpace(responses)
+              );
+            })
+          )
+          .catch(err => {
+            console.error(err);
+          });
       });
     });
   },
   methods: {
-    getRoute() {
-      var start = this.$store.state.closestSpace.geometry.coordinates;
-      var end = this.$store.state.searchPoint[0].geometry.coordinates;
+    getRouteRequest(coordinates) {
+      // var start = this.$store.state.closestSpace.geometry.coordinates;
+      var start = this.$store.state.searchPoint[0].geometry.coordinates;
+      var end = coordinates;
       var reqURL =
         "https://api.mapbox.com/directions/v5/mapbox/walking/" +
         start[0] +
@@ -229,16 +255,30 @@ export default {
         end[1] +
         "?geometries=geojson&access_token=" +
         mapboxgl.accessToken;
-      axios({
+      return axios({
         url: reqURL,
         method: "get"
-      })
-        .then(response => {
-          this.$store.commit("setDirections", response.data.routes[0].geometry);
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      });
+    },
+    getConcurrentRequests(openSpaces) {
+      var conReqs = [];
+      for (let i = 0; i < openSpaces.length; i++) {
+        conReqs.push(this.getRouteRequest(openSpaces[i].geometry.coordinates));
+      }
+      return conReqs;
+    },
+    findClosestSpace(routeResponses) {
+      var closestRoute = routeResponses[0].data.routes[0].geometry;
+      var d = routeResponses[0].data.routes[0].distance;
+
+      for (let i = 1; i < routeResponses.length; i++) {
+        if (routeResponses[i].data.routes[0].distance < d) {
+          d = routeResponses[i].data.routes[0].distance;
+          closestRoute = routeResponses[i].data.routes[0].geometry;
+        }
+      }
+
+      return closestRoute;
     }
   }
 };

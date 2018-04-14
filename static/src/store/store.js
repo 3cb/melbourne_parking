@@ -16,8 +16,8 @@ export default new Vuex.Store({
       unoccupied: 0
     },
     features: [], // [{ type: "Feature", geometry: geometry }]
+    openSpaces: [], // [{ type: "Feature", geometry: geometry }]
     searchPoint: [], // [{ type: "Feature", geometry: geometry }]
-    closestSpace: {}, // { type: "Feature", geometry: geometry }
     directions: [] // [{ type: "Feature", geometry: geometry }]
   },
   mutations: {
@@ -53,8 +53,9 @@ export default new Vuex.Store({
     },
     updateFeatures(state) {
       state.features = []
+      state.openSpaces = []
       for (let i = 0; i < state.spots.length; i++) {
-        state.features.push({
+        let f = {
           type: "Feature",
           geometry: {
             type: "Point",
@@ -63,7 +64,16 @@ export default new Vuex.Store({
           properties: {
             status: state.spots[i].status
           }
-        })
+        }
+
+        state.features.push(f)
+
+        if (f.properties.status === "Unoccupied") {
+          state.openSpaces.push({
+            distance: 0,
+            ...f
+          })
+        }
       }
     },
     updateSearchPoint(state, geometry) {
@@ -72,22 +82,6 @@ export default new Vuex.Store({
         type: "Feature",
         geometry: geometry
       })
-    },
-    setClosestSpace(state) {
-      state.closestSpace = {}
-      var options = {
-        units: "kilometers"
-      }
-      var i
-      var d
-      for (i = 0; i < state.features.length; i++) {
-        if (state.features[i].properties.status === "Unoccupied" && _.hasIn(state.closestSpace, "geometry") === false) {
-          state.closestSpace = state.features[i]
-        } else if (state.features[i].properties.status === "Unoccupied" && _.hasIn(state.closestSpace, "geometry") === true) {
-          state.closestSpace = (turf.distance(turf.point(state.searchPoint[0].geometry.coordinates), turf.point(state.features[i].geometry.coordinates), options)
-            < turf.distance(turf.point(state.searchPoint[0].geometry.coordinates), turf.point(state.closestSpace.geometry.coordinates), options)) ? state.features[i] : state.closestSpace
-        }
-      }
     },
     setDirections(state, geometry) {
       state.directions = []
