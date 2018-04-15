@@ -114,7 +114,7 @@ export default {
       container: "map", // container id
       style: "mapbox://styles/mapbox/light-v9",
       center: [144.963056, -37.813611], // starting position [lng, lat]
-      zoom: 13.75
+      zoom: 13.99
     });
 
     this.map.on("load", () => {
