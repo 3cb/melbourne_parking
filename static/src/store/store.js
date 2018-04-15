@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import _ from 'lodash'
 
 Vue.use(Vuex)
 
@@ -14,8 +15,10 @@ export default new Vuex.Store({
       occupied: 0,
       unoccupied: 0
     },
-    features: [],
-    searchPoint: []
+    features: [], // [{ type: "Feature", geometry: geometry }]
+    openSpaces: [], // [{ type: "Feature", geometry: geometry }]
+    searchPoint: [], // [{ type: "Feature", geometry: geometry }]
+    directions: [] // [{ type: "Feature", geometry: geometry }]
   },
   mutations: {
     startWS(state) {
@@ -50,8 +53,9 @@ export default new Vuex.Store({
     },
     updateFeatures(state) {
       state.features = []
+      state.openSpaces = []
       for (let i = 0; i < state.spots.length; i++) {
-        state.features.push({
+        let f = {
           type: "Feature",
           geometry: {
             type: "Point",
@@ -60,12 +64,28 @@ export default new Vuex.Store({
           properties: {
             status: state.spots[i].status
           }
-        })
+        }
+
+        state.features.push(f)
+
+        if (f.properties.status === "Unoccupied") {
+          state.openSpaces.push({
+            distance: 0,
+            ...f
+          })
+        }
       }
     },
     updateSearchPoint(state, geometry) {
       state.searchPoint = []
       state.searchPoint.push({
+        type: "Feature",
+        geometry: geometry
+      })
+    },
+    setDirections(state, geometry) {
+      state.directions = []
+      state.directions.push({
         type: "Feature",
         geometry: geometry
       })

@@ -4,7 +4,7 @@
   <div id="legend">
     <div>
       <svg width="40" height="20">
-        <rect width="40" height="20" style="fill:#00ff00;stroke-width:3;stroke:rgb(0,0,0)" />
+        <rect width="40" height="20" style="fill:#009900;stroke-width:3;stroke:rgb(0,0,0)" />
       </svg>
       Open Spaces -- {{ count.unoccupied }}
     </div>
@@ -24,6 +24,7 @@
 <script>
 import axios from "axios";
 import xs from "xstream";
+import _ from "lodash";
 var flatbuffers = require("../../node_modules/flatbuffers").flatbuffers;
 var melbourne = require("../melbourne/schema_generated.js").melbourne;
 
@@ -68,8 +69,14 @@ export default {
     features() {
       return this.$store.state.features;
     },
+    openSpaces() {
+      return this.$store.state.openSpaces;
+    },
     searchPoint() {
       return this.$store.state.searchPoint;
+    },
+    directions() {
+      return this.$store.state.directions;
     },
     main$() {
       return xs.createWithMemory(this.producer);
@@ -90,6 +97,12 @@ export default {
         type: "FeatureCollection",
         features: sp
       });
+    },
+    directions(dir) {
+      this.map.getSource("directions").setData({
+        type: "FeatureCollection",
+        features: dir
+      });
     }
   },
   mounted() {
@@ -101,7 +114,7 @@ export default {
       container: "map", // container id
       style: "mapbox://styles/mapbox/light-v9",
       center: [144.963056, -37.813611], // starting position [lng, lat]
-      zoom: 13.75
+      zoom: 13.99
     });
 
     this.map.on("load", () => {
@@ -133,6 +146,14 @@ export default {
             }
           });
 
+          this.map.addSource("directions", {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features: this.directions
+            }
+          });
+
           this.map.addLayer({
             id: "spotsLayer",
             type: "circle",
@@ -148,7 +169,7 @@ export default {
                 "Present",
                 "#ff0000",
                 "Unoccupied",
-                "#00ff00",
+                "#009900",
                 "#000000"
               ]
             }
@@ -163,6 +184,17 @@ export default {
               "circle-color": "#007cbf",
               "circle-stroke-width": 3,
               "circle-stroke-color": "#fff"
+            }
+          });
+
+          this.map.addLayer({
+            id: "directionsLayer",
+            type: "line",
+            source: "directions",
+            paint: {
+              "line-width": 3,
+              "line-color": "#007cbf",
+              "line-width": 3
             }
           });
         })
@@ -181,8 +213,75 @@ export default {
 
       this.geocoder.on("result", e => {
         this.$store.commit("updateSearchPoint", e.result.geometry);
+        var closestSpaces = _.chain(this.openSpaces)
+          .map(v => {
+            v.distance = turf.distance(
+              turf.point(e.result.geometry.coordinates),
+              turf.point(v.geometry.coordinates),
+              { units: "kilometers" }
+            );
+            return v;
+          })
+          .orderBy(["distance"], ["asc"])
+          .take(15) // max requests for Mapbox route API is 60 per minute
+          .value();
+
+        axios.all(this.getConcurrentRequests(closestSpaces))
+          .then(
+            axios.spread((...responses) => {
+              this.$store.commit(
+                "setDirections",
+                this.findClosestSpace(responses)
+              );
+            })
+          )
+          .catch(err => {
+            console.error(err);
+          });
       });
     });
+  },
+  methods: {
+    getRouteRequest(coordinates) {
+      // var start = this.$store.state.closestSpace.geometry.coordinates;
+      var start = this.$store.state.searchPoint[0].geometry.coordinates;
+      var end = coordinates;
+      var reqURL =
+        "https://api.mapbox.com/directions/v5/mapbox/walking/" +
+        start[0] +
+        "," +
+        start[1] +
+        ";" +
+        end[0] +
+        "," +
+        end[1] +
+        "?geometries=geojson&access_token=" +
+        mapboxgl.accessToken;
+      return axios({
+        url: reqURL,
+        method: "get"
+      });
+    },
+    getConcurrentRequests(openSpaces) {
+      var conReqs = [];
+      for (let i = 0; i < openSpaces.length; i++) {
+        conReqs.push(this.getRouteRequest(openSpaces[i].geometry.coordinates));
+      }
+      return conReqs;
+    },
+    findClosestSpace(routeResponses) {
+      var closestRoute = routeResponses[0].data.routes[0].geometry;
+      var d = routeResponses[0].data.routes[0].distance;
+
+      for (let i = 1; i < routeResponses.length; i++) {
+        if (routeResponses[i].data.routes[0].distance < d) {
+          d = routeResponses[i].data.routes[0].distance;
+          closestRoute = routeResponses[i].data.routes[0].geometry;
+        }
+      }
+
+      return closestRoute;
+    }
   }
 };
 </script>
