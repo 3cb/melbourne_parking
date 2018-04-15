@@ -4,7 +4,7 @@
   <div id="legend">
     <div>
       <svg width="40" height="20">
-        <rect width="40" height="20" style="fill:#00ff00;stroke-width:3;stroke:rgb(0,0,0)" />
+        <rect width="40" height="20" style="fill:#009900;stroke-width:3;stroke:rgb(0,0,0)" />
       </svg>
       Open Spaces -- {{ count.unoccupied }}
     </div>
@@ -169,7 +169,7 @@ export default {
                 "Present",
                 "#ff0000",
                 "Unoccupied",
-                "#00ff00",
+                "#009900",
                 "#000000"
               ]
             }
@@ -192,6 +192,8 @@ export default {
             type: "line",
             source: "directions",
             paint: {
+              "line-width": 3,
+              "line-color": "#007cbf",
               "line-width": 3
             }
           });
